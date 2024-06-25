@@ -1,0 +1,65 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-06-09 10:46:52.387666",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "client_id",
+  "client_secret",
+  "column_break_afpm",
+  "x_location_id",
+  "x_api_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "client_id",
+   "fieldtype": "Data",
+   "label": "Client ID"
+  },
+  {
+   "fieldname": "client_secret",
+   "fieldtype": "Data",
+   "label": "Client secret"
+  },
+  {
+   "fieldname": "column_break_afpm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "x_location_id",
+   "fieldtype": "Data",
+   "label": "x_location_id"
+  },
+  {
+   "fieldname": "x_api_key",
+   "fieldtype": "Data",
+   "label": "x_api_key"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-06-09 10:46:52.387666",
+ "modified_by": "Administrator",
+ "module": "GaragePlug",
+ "name": "GaragePlug Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
