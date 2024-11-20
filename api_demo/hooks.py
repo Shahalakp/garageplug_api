@@ -28,10 +28,13 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
+
 doctype_js = {"Item" : "public/js/item.js",
               "Customer" : "public/js/customer.js",
               "Supplier" : "public/js/supplier.js",
-              "Item Price" : "public/js/item_price.js"}
+              "Item Price" : "public/js/item_price.js",
+              "Purchase Order" : "public/js/purchase_order.js",
+              "Purchase Invoice" : "public/js/purchase_invoice.js"}
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -72,7 +75,7 @@ doctype_js = {"Item" : "public/js/item.js",
 # ------------
 
 # before_install = "api_demo.install.before_install"
-# after_install = "api_demo.install.after_install"
+after_install = "api_demo.install.install.install"
 
 # Uninstallation
 # ------------
@@ -135,6 +138,7 @@ doctype_js = {"Item" : "public/js/item.js",
 # }
 
 
+
 # Scheduled Tasks
 # ---------------
 
@@ -155,6 +159,11 @@ doctype_js = {"Item" : "public/js/item.js",
 #		"api_demo.tasks.monthly"
 #	],
 # }
+# scheduler_events = {
+# 	"all": [
+# 		"api_demo.api_demo.getscript.getitem_api"
+# 	],
+# }
 
 # Testing
 # -------
@@ -167,6 +176,7 @@ doctype_js = {"Item" : "public/js/item.js",
 # override_whitelisted_methods = {
 #	"frappe.desk.doctype.event.event.get_events": "api_demo.event.get_events"
 # }
+
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,

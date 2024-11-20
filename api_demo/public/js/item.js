@@ -50,10 +50,10 @@ frappe.ui.form.on('Item',  {
 
 });
 
-frappe.listview_settings['Item'] = {
-    onload: function(listview) {
-        listview.page.add_inner_button(__('Custom Button'), function() {
-            frappe.msgprint(__('Custom Button Clicked'));
-        });
-    }
-};
+// frappe.listview_settings['Item'] = {
+//     onload: function(listview) {
+//         listview.page.add_inner_button(__('Custom Button'), function() {
+//             frappe.msgprint(__('Custom Button Clicked'));
+//         });
+//     }
+// };
