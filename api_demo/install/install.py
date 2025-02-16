@@ -127,6 +127,13 @@ def make_custom_fields():
             "label": "External ID",
             "insert_after":"expiry_year"
             },
+            {
+                "doctype":"Item",
+                "fieldname": "max_stock",
+                "fieldtype": "Data",
+                "label": "Max Stock",
+                "insert_after":"safety_stock"
+            }
 
 		],
 		"Supplier":[
@@ -267,6 +274,16 @@ def make_custom_fields():
             "label": "Neighbourhood",
             "insert_after":"map_url"
             }      
+        ],
+        "Warehouse":[
+              {
+                "doctype": "Warehouse",
+                "fieldname": "rack_id",
+                "fieldtype": "Data",
+                "label": "Rack Id",
+                "insert_after":"warehouse_name" 
+
+              }
         ],
 
         "Purchase Invoice":[

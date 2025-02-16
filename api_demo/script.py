@@ -1,6 +1,8 @@
 import requests
 import frappe
 from frappe.utils import now_datetime
+from frappe import _
+from datetime import datetime, timedelta, timezone
 
 @frappe.whitelist()
 def get_access_token(garageplug):
@@ -106,6 +108,68 @@ def item_api(**kwargs):
         else:
             print("Failed to send item data. Status code:", response.status_code)
             print("Response:", response.text)
+
+    elif item_new.opening_stock:
+
+        
+        item_default = frappe.get_doc("Item Default",item_new.item_defaults)
+        warehouse = frappe.get_doc("Warehouse",item_default.default_warehouse)
+        
+
+        url = "https://devintegration.garageplug.com/part_with_inventory"
+        headers = {
+                'x-api-key': garageplug.x_api_key,
+                'x-location-id': garageplug.x_location_id,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': f'Bearer {access_token}'
+            }
+        body = [
+        {
+        "part_name": item_new.item_name,
+        "part_number": item_new.item_code,
+        "type": item_new.item_group,
+        "pattern": item_new.pattern,
+        "sku": item_new.sku,
+        "size": item_new.size,
+        "purchase_price_without_tax": item_new.valuation_rate,
+        "purchase_tax_name": p_title,
+        "purchase_tax_percentage": p_rate,
+        "description": item_new.description,
+        "part_barcode": item_new.barcodes if isinstance(item_new.barcodes, str) else item_new.barcodes[0] if item_new.barcodes else '',
+        "manufacturing_year": item_new.manufacturing_year,
+        "component_category": item_new.component_category,
+        "expire_year": exp_year,
+        "sales_price_without_tax":  item_new.standard_rate,
+        "sales_tax_name": title,
+        "sales_tax_percentage": rate,
+        "unit_of_measure": item_new.stock_uom,
+        "manufacturer": item_new.manufacturer,
+        "external_id": item_new.external_id,
+        "inventory_request": {
+        "current_stock": item_new.opening_stock,
+        "max_stock": item_new.max_stock,
+        "min_stock": item_new.safety_stock,
+        "rack_id": warehouse.rack_id
+        }
+        },
+   
+        ] 
+        response = requests.post(url, headers=headers, json=body) 
+
+        if response.status_code == 200:
+            print("Item data sent successfully.")
+            print("Response:", response.text)
+            res = response.json()
+            print(res[0]["part_id"])
+            item_new.item_id = res[0]["part_id"]
+            item_new.save()
+
+        else:
+            print("Failed to send item data. Status code:", response.status_code)
+            print("Response:", response.text) 
+
+
 # To send item data
     else:
 
@@ -593,7 +657,7 @@ def purchaseinvoice_api(**kwargs):
     mapped_items = []
     for item in pi_new.items: 
         item_now = frappe.get_doc("Item", item.item_code)
-        if item.slaes_taxes_and_charges_template:
+        if item.sales_taxes_and_charges_template:
             sales_template = frappe.get_doc("Sales Taxes and Charges Template",item.sales_taxes_and_charges_template)
             s_title = sales_template.title
             for detail in sales_template.taxes:
@@ -666,9 +730,369 @@ def purchaseinvoice_api(**kwargs):
         print("An error occurred:", e)
 
 
-# @frappe.whitelist()
-# def getitem_api(**kwargs):
-#     print("inside get")
+@frappe.whitelist()
+def stockentry_api(**kwargs):
+    print("inside function")
 
-#     garageplug = frappe.get_doc("GaragePlug Settings")
-#     access_token = get_access_token(garageplug)
+    garageplug = frappe.get_doc("GaragePlug Settings")
+    access_token = get_access_token(garageplug)
+
+    se_new = frappe.get_doc("Stock Entry", kwargs.get("se"))
+
+    entry_type = se_new.stock_entry_type
+    first_invitems=[]
+    notfirst_invitems=[]
+    bins = frappe.get_all("Bin", fields=["item_code", "actual_qty"])
+    if entry_type == "Material Receipt":
+        for item in se_new.items:
+            for bin in bins:
+                 if bin.item_code == item.item_code:
+                    if bin.actual_quantity == 0:
+                      first_invitems.append(item.item_code)
+            
+                    else:
+                        notfirst_invitems.append(item.item_code)
+        print(first_invitems)
+        print(notfirst_invitems)
+        
+
+
+
+    
+    # mapped_items=[]
+    # if entry_type == "Material Issue" or entry_type == "Material Receipt":
+    #     for item in se_new.items: 
+    #         item_now = frappe.get_doc("Item", item.item_code)
+    #         item_default = frappe.get_doc("Item Default",item_now.item_defaults)
+    #         warehouse = frappe.get_doc("Warehouse",item_default.default_warehouse)
+
+    #         if entry_type == "Material Issue":
+    #             qty = -abs(item.qty)
+    #         else:
+    #             qty = item.qty
+
+    #         mapped_item = {
+    #             "current_stock": qty,
+    #             "max_stock": item_now.max_stock,
+    #             "min_stock": item_now.safety_stock,
+    #             "part_id": item_now.item_id,
+    #             "rack_id": warehouse.rack_id,
+    #             "unit_category": "",
+    #             "unit_of_measure": item.uom
+    #         }
+    #         mapped_items.append(mapped_item)
+    # else:
+    #     print("No data to send.")
+    
+
+
+    # se_url = "https://devintegration.garageplug.com/inventory"
+
+    # se_body = mapped_items
+    
+
+    # se_headers = {
+    #         "Authorization": f"Bearer {access_token}",
+    #         "Content-Type": "application/json",
+    #         "Accept": "application/json",
+    #         "x-location-id": garageplug.x_location_id,
+    #         "x-api-key": garageplug.x_api_key,
+    #     }
+
+    # se_response = requests.request(
+    #     "POST", se_url, headers=se_headers, json=se_body
+    # )
+
+    # try:
+    
+    #     if se_response.status_code == 200:
+    #         print("data sent successfully")
+    #         print("Response:", se_response.text)
+    #         # res = se_response.json()
+    #     else:
+    #         print("Failed to send item data. Status code:", se_response.status_code)
+    #         print("Response:", se_response.text)
+    # except Exception as e:
+    #     print("An error occurred:", e)
+
+
+@frappe.whitelist()
+def customergroup_api(**kwargs):
+    print("inside function")
+
+    garageplug = frappe.get_doc("GaragePlug Settings")
+    access_token = get_access_token(garageplug)
+
+    cg_new = frappe.get_doc("Customer Group", kwargs.get("cg"))
+    mapped_items = []
+    if cg_new.service_group:
+        print("service group")
+    else:
+        cg_url = "https://devintegration.garageplug.com/customer_group_price_part/external_id"
+
+        for item in cg_new.table_rmmj: 
+            mapped_item = {
+                "external_part_id": item.data_jakr,
+                "price": item.rate
+            }
+            mapped_items.append(mapped_item)
+
+        cg_body = {
+            "customer_group_name": cg_new.customer_group_name,
+            "part_price_list": mapped_items
+        }
+
+        cg_headers = {
+            "Authorization": f"Bearer {access_token}",
+            "x-location-id": garageplug.x_location_id,
+            "x-api-key": garageplug.x_api_key,
+        }
+
+        cg_response = requests.request(
+            "POST", cg_url, headers=cg_headers, json=cg_body
+        )
+
+        try:
+        
+            if cg_response.status_code == 200:
+                print("data sent successfully")
+                print("Response:", cg_response.text)
+                # res = se_response.json()
+            else:
+                print("Failed to send item data. Status code:", cg_response.status_code)
+                print("Response:", cg_response.text)
+        except Exception as e:
+            print("An error occurred:", e)
+
+
+
+
+
+
+@frappe.whitelist()
+def fetch_purchase_orders_from_garageplug():
+    print("Starting GET request for Purchase Orders.")
+
+    # Get settings from the GaragePlug Settings doctype
+    garageplug = frappe.get_doc("GaragePlug Settings")
+    access_token = get_access_token(garageplug)  # Assume this function exists
+    print("Access toked granted.")
+    # Define GET request parameters
+    params = {
+        "pageSize": "10",
+        # "fromDateTime": "2024-12-01T00:00:00",  # Adjust dynamically
+        # "toDateTime": now_datetime().strftime('%Y-%m-%dT%H:%M:%S'),
+        "pageNumber": "1",
+        # "filterBy": "status:open",
+    }
+    print("params set")
+    # Define headers
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "x-location-id": garageplug.x_location_id,
+        "x-api-key": garageplug.x_api_key,
+    }
+    print("headers set")
+    # Make the GET request
+    url="https://devintegration.garageplug.com/purchase_order"
+    try:
+        response = requests.get(url, headers=headers, params=params)
+
+        if response.status_code == 200:
+            print("GET request successful. Response:", response.json())
+            # Process the response (e.g., update Frappe documents)
+            process_purchase_orders(response.json())
+        else:
+            frappe.log_error(
+                _("Failed to fetch purchase orders"),
+                f"Status: {response.status_code}, Response: {response.text}"
+            )
+    except Exception as e:
+        frappe.log_error(_("Error in GET request"), str(e))
+
+
+def process_purchase_orders(response_data):
+    """
+    Process the GaragePlug response data and create or update ERPNext Purchase Orders.
+    
+    Args:
+        response_data (list): List of purchase orders from GaragePlug.
+    """
+    for po in response_data:
+        try:
+            # Extract Purchase Order details
+            purchase_order_id = po.get("purchase_order_id")
+            po_date = po.get("po_date")
+            vendor_id = po.get("vendor_id")
+            total_amount = po.get("total_amount")
+            comment = po.get("comment")
+            status = po.get("status")  # Default to "Draft" if not provided
+            vendor_invoice_link = po.get("vendor_invoice_link", "")
+            created_at = po.get("created_at")
+            updated_at = po.get("updated_at")
+            external_po_id = po.get("external_purchase_order_id")
+
+            # Get or create Supplier based on vendor_id
+            # supplier_name = f"Supplier-{vendor_id}"  # Example supplier naming convention
+            # supplier = frappe.db.get_value("Supplier", {"supplier_id": vendor_id}, "name")
+            # if not supplier:
+            #     supplier_doc = frappe.get_doc({
+            #         "doctype": "Supplier",
+            #         "supplier_name": supplier_name,
+            #         "supplier_id": vendor_id
+            #     })
+            #     supplier_doc.insert(ignore_permissions=True)
+            #     supplier = supplier_doc.name
+            stat =""
+            if status == "Created":
+                stat=="To Receive and Bill"
+            elif status == "Rejected":
+                stat == "Cancelled"
+            
+
+            supplier = frappe.get_doc("Supplier", {"supplier_id": vendor_id})
+            if supplier:
+                po_doc = frappe.get_doc({
+                    "doctype": "Purchase Order",
+                    "po_id": purchase_order_id,
+                    "supplier": supplier,
+                    "transaction_date": created_at,
+                    "status": stat,
+                    "total": total_amount,
+                    "comment": comment,
+                    "schedule_date" : po_date,
+                    # "vendor_invoice_link": vendor_invoice_link,
+                    # "external_purchase_order_id": external_po_id,
+                    # "created_at": created_at,
+                    # "updated_at": updated_at
+                })
+                po_doc.flags.ignore_mandatory = True  # Bypass mandatory fields during insert
+
+            # Map Purchase Items
+            po_doc.items = []  # Clear existing items if updating
+            for item in po.get("purchase_items", []):
+                po_doc.append("items", {
+                    "item_code": item.get("part_number", ""),
+                    "item_name": item.get("part_name", ""),
+                    "rate": item.get("purchase_price_without_tax", 0),
+                    "qty": item.get("quantity", 0),
+                    # "taxes_and_charges": item.get("purchase_tax_name", ""),
+                    # "description": item.get("component_category", ""),
+                    "uom": item.get("unit_of_measure", "")
+                })
+
+            # Save the Purchase Order
+            po_doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            print(f"Processed Purchase Order: {po_doc.name}")
+
+        except Exception as e:
+            frappe.log_error(f"Error processing Purchase Order {po.get('purchase_order_id')}: {str(e)}")
+
+
+
+
+
+@frappe.whitelist()
+def fetch_customer_from_garageplug():
+    print("Starting GET request for customer.")
+
+    # Get settings from the GaragePlug Settings doctype
+    garageplug = frappe.get_doc("GaragePlug Settings")
+    access_token = get_access_token(garageplug)  # Ensure this function works
+    print("Access token granted.")
+
+    # Define GET request parameters
+    to_datetime = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    from_datetime = (datetime.now(timezone.utc) - timedelta(days=7)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    params = {
+        # "customerCategory": "B2C",
+        "pageSize": "20",
+        "pageNumber": "1",
+        # "fromDateTime": from_datetime,
+        # "toDateTime": to_datetime,
+        # "filterBy": ""
+    }
+    print("Params set:", params)
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "x-location-id": garageplug.x_location_id,
+        "x-api-key": garageplug.x_api_key,
+        "Accept": "application/json",
+    }
+    print("Headers set:", headers)
+
+    url = "https://devintegration.garageplug.com/customer"
+
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()  # Raises HTTPError for bad responses (4xx, 5xx)
+
+        # Parse and process the response
+        customers = response.json()
+        if not customers:
+            print("No customers found in the response.")
+            return
+
+        print("Fetched customers:", customers)
+
+        for customer_data in customers:
+            customer_id = customer_data.get('customer_id')
+            customer_name = customer_data.get('name')
+            mobile_number = customer_data.get('mobile_number')
+            secondary_phone = customer_data.get('secondary_phone')
+            email = customer_data.get('email', '')
+            address = customer_data.get('address', {})
+         
+    except requests.exceptions.RequestException as e:
+        error_message = f"Error syncing customers: {str(e)}"
+        print(error_message)
+        frappe.log_error(error_message[:140], "Customer Sync Error")  # Truncate if necessary
+
+def process_customer(customer):
+    """
+    Example function to process individual customers.
+    """
+    print(f"Processing customer: {customer}")
+    # Implement customer synchronization logic here.
+
+
+# def sync_customers():
+#     GP_API_URL = "https://18vlz2k60m.execute-api.eu-west-1.amazonaws.com/dev/customer"
+#     GP_HEADERS = {
+#     "Authorization": "Bearer YOUR_GARAGEPLUG_TOKEN",
+#     "Content-Type": "application/json"
+# }
+#     """Fetch customers from GaragePlug and sync with ERPNext."""
+    
+
+#         # Process customers
+#     for customer in customers:
+#             # Check if customer exists in ERPNext
+#         existing = frappe.get_all("Customer", filters={"email": customer.get("email")}, limit=1)
+#             if existing:
+#                 # Update existing customer
+#                 frappe.db.set_value("Customer", existing[0].name, {
+#                     "customer_name": customer.get("name"),
+#                     "mobile_no": customer.get("mobile_number"),
+#                     "tax_id": customer.get("tax_number"),
+#                 })
+#             else:
+#                 # Create new customer
+#                 doc = frappe.get_doc({
+#                     "doctype": "Customer",
+#                     "customer_name": customer.get("name"),
+#                     "email": customer.get("email"),
+#                     "mobile_no": customer.get("mobile_number"),
+#                     "tax_id": customer.get("tax_number"),
+#                     "customer_group": customer.get("customer_group_name", "Individual"),
+#                     "territory": "All Territories",
+#                 })
+#                 doc.insert(ignore_permissions=True)
+
+#         frappe.db.commit()
+#         frappe.log("Customer sync completed successfully.")
+    
+

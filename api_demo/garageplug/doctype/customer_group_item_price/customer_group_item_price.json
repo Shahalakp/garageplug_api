@@ -1,0 +1,47 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-12-22 15:18:45.561706",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_price",
+  "data_jakr",
+  "rate"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_price",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item name",
+   "options": "Item Price",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "item_price.item_code",
+   "fieldname": "data_jakr",
+   "fieldtype": "Data",
+   "label": "Item Code"
+  },
+  {
+   "fetch_from": "item_price.price_list_rate",
+   "fieldname": "rate",
+   "fieldtype": "Data",
+   "label": "Rate"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-12-22 15:20:57.615865",
+ "modified_by": "Administrator",
+ "module": "GaragePlug",
+ "name": "Customer Group Item Price",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
